@@ -44,7 +44,6 @@ def getSensorReading():
     return str(reading) 
 
 
-
 @app.route("/get-sensor-all-data")
 def getAllSensorData():
     """ Retrieve data from old to new """
