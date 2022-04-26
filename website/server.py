@@ -1,14 +1,11 @@
-import json
 from flask import Flask, request
-
+import requests
 from db import DB
-
-
 
 
 app = Flask(__name__)
 
-
+high_priority_patient = 0
 
 
 @app.route("/add-sensor-reading")
@@ -58,5 +55,79 @@ def getAllSensorData():
     all_readings = [all_readings[i][1] for i in range(len(all_readings))]
     return str(all_readings)
 
+@app.route('/get-emergency-status') # tested
+def getEmergencyStatus():
+    """ return patient id of emergency case """
+    global high_priority_patient
+    return str(high_priority_patient)
 
+
+@app.route('/get-patient-rate') # tested
+def getPatientRate(): 
+    """ returns the rate of retieve patient data by sensors """
+    icu_db = DB()
+    patient_id = str(request.args.get('id'))
+    
+    command = f"SELECT patient_rate FROM patients WHERE patient_id={patient_id};"
+    icu_db.execute_sql_command(command)
+    reading = icu_db.mycursor.fetchone()[0] # pick up data only
+    return str(reading)
+
+
+    
+
+@app.route('/set-emergency-call') # has't finished
+def setEmergencyCall():
+    """ get id of high priority patient """
+    global high_priority_patient
+
+    icu_db = DB()
+    patient_id = str(request.args.get('id'))
+    
+    if high_priority_patient != 0: # aonther patient is in the priority state
+        resp = requests.get(f"http://{host}:8080/end-emergency-call?id={high_priority_patient}")
+        print(resp.status_code)
+
+
+    high_priority_patient = patient_id
+
+    print(patient_id)
+    command = f"UPDATE patients SET patient_rate={2} WHERE patient_id={patient_id}"
+    icu_db.execute_sql_command(command)
+    
+    return f"<h2>Patient with ID={patient_id} got higher priority</h2>"
+
+
+@app.route('/end-emergency-call') # has't finished
+def endEmergencyCall():
+    """ clear a patient from priority state via his id """
+    global high_priority_patient
+
+    icu_db = DB()
+    patient_id = str(request.args.get('id'))
+    
+    high_priority_patient = 0 # reset state -> no priority patients
+
+    print(patient_id)
+    command = f"UPDATE patients SET patient_rate={1} WHERE patient_id={patient_id}"
+    icu_db.execute_sql_command(command)
+    
+    return f"<h2>Normal states: No priorities</h2>"
+
+
+host = "127.0.0.1"
 app.run(debug=True, port=8080)
+
+
+""" to change row value
+
+UPDATE employees 
+SET 
+    address = '1300 Carter St',
+    city = 'San Jose',
+    postalcode = 95125,
+    region = 'CA'
+WHERE
+    employeeID = 3;
+
+"""
