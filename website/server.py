@@ -26,8 +26,6 @@ def addSensorReading():
             <h4>Sending Rate: {sending_rate} </h4>
             """
 
-
-
 @app.route("/get-sensor-reading")
 def getSensorReading():
     """ Retrieve the last reading """
@@ -40,7 +38,6 @@ def getSensorReading():
     last_row = icu_db.mycursor.fetchone() # pick up the entire row
     reading, reading_id, sending_rate = last_row
     return (str(reading) + " " + str(reading_id))
-
 
 @app.route("/get-sensor-all-data")
 def getAllSensorData():
@@ -56,12 +53,28 @@ def getAllSensorData():
     all_readings = [all_readings[i][1] for i in range(len(all_readings))]
     return str(all_readings)
 
+@app.route("/get-table")
+def getAllTableData():
+    """ Retrieve all data from a table specified by an id """
+    icu_db = DB()
+    table_name = str(request.args.get('tname'))
+
+    command = f"select * from {table_name} LIMIT 1000"
+    icu_db.execute_sql_command(command)
+    
+    all_data = icu_db.mycursor.fetchall()
+
+    all_data = [[all_data[i][0], all_data[i][1], all_data[i][2]] for i in range(len(all_data))]
+    return f"""
+                For temp [id, reading, rate]<br>
+                For patients [id, rate, sensors] <br> <br>
+                {str(all_data)}"""
+
 @app.route('/get-emergency-status') # tested
 def getEmergencyStatus():
     """ return patient id of emergency case """
     global high_priority_patient
     return str(high_priority_patient)
-
 
 @app.route('/get-patient-rate') # tested
 def getPatientRate(): 
@@ -74,10 +87,7 @@ def getPatientRate():
     rate = icu_db.mycursor.fetchone()[0] 
     return str(rate)
 
-
-    
-
-@app.route('/set-emergency-call') # has't finished
+@app.route('/set-emergency-call') # tested
 def setEmergencyCall():
     """ get id of high priority patient """
     global high_priority_patient
@@ -98,8 +108,7 @@ def setEmergencyCall():
     
     return f"<h2>Patient with ID={patient_id} got higher priority</h2>"
 
-
-@app.route('/end-emergency-call') # has't finished
+@app.route('/end-emergency-call') # tested
 def endEmergencyCall():
     """ clear a patient from priority state via his id """
     global high_priority_patient
