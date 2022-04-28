@@ -5,7 +5,7 @@ from db import DB
 
 app = Flask(__name__)
 
-high_priority_patient = 0
+high_priority_patient = "Null"
 
 
 @app.route("/add-sensor-reading")
@@ -37,8 +37,9 @@ def getSensorReading():
     print(sensor_id)
     command = f"SELECT * FROM {sensor_id} ORDER BY id DESC LIMIT 1"
     icu_db.execute_sql_command(command)
-    reading = icu_db.mycursor.fetchone()[1] # pick up data only
-    return str(reading) 
+    last_row = icu_db.mycursor.fetchone() # pick up the entire row
+    reading, reading_id, sending_rate = last_row
+    return (str(reading) + " " + str(reading_id))
 
 
 @app.route("/get-sensor-all-data")
@@ -70,8 +71,8 @@ def getPatientRate():
     
     command = f"SELECT patient_rate FROM patients WHERE patient_id={patient_id};"
     icu_db.execute_sql_command(command)
-    reading = icu_db.mycursor.fetchone()[0] # pick up data only
-    return str(reading)
+    rate = icu_db.mycursor.fetchone()[0] 
+    return str(rate)
 
 
     
@@ -84,7 +85,7 @@ def setEmergencyCall():
     icu_db = DB()
     patient_id = str(request.args.get('id'))
     
-    if high_priority_patient != 0: # aonther patient is in the priority state
+    if high_priority_patient != "Null": # aonther patient is in the priority state
         resp = requests.get(f"http://{host}:8080/end-emergency-call?id={high_priority_patient}")
         print(resp.status_code)
 
@@ -106,7 +107,7 @@ def endEmergencyCall():
     icu_db = DB()
     patient_id = str(request.args.get('id'))
     
-    high_priority_patient = 0 # reset state -> no priority patients
+    high_priority_patient = "Null" # reset state -> no priority patients
 
     print(patient_id)
     command = f"UPDATE patients SET patient_rate={1} WHERE patient_id={patient_id}"
